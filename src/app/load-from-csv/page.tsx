@@ -11,7 +11,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { CheckCircle2, XCircle, Trophy, BookOpen, ChevronLeft, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { type Question, fetchExamQuestions } from "@/lib/exam-data"
+
+interface Question {
+  number: string
+  question: string
+  options: { [key: string]: string }
+  correctAnswer: string
+  explanation: string
+  domain: string
+  competency: string
+}
 
 interface Answer {
   questionNumber: string
@@ -37,13 +46,51 @@ export default function KCNAExamPractice() {
 
   const loadQuestions = async () => {
     try {
-      const examQuestions = await fetchExamQuestions()
-      setQuestions(examQuestions)
+      // const url = "https://docs.google.com/spreadsheets/d/1ANzsPG0mw2iFJc-ZPWBjOsdSEktwZKYXg8Vr-dS_UhQ/edit?usp=drive_link";
+      const url ="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/KCNA%20Exam%20Question%20Dump%20-%20KCNA%20Question%20Dump-C7TDBdQWiQ7LIZbTzzw0IYxdzZBpOT.csv"
+
+      const response = await fetch(url)
+      const text = await response.text()
+      const parsedQuestions = parseCSV(text)
+      setQuestions(parsedQuestions)
       setLoading(false)
     } catch (error) {
       console.error("Error loading questions:", error)
       setLoading(false)
     }
+  }
+
+  const parseCSV = (text: string): Question[] => {
+    const lines = text.split("\n").filter((line) => line.trim())
+    const headers = lines[0].split(",").map((h) => h.trim().replace(/"/g, ""))
+
+    return lines
+      .slice(1)
+      .map((line) => {
+        const values = line.match(/(".*?"|[^,]+)/g) || []
+        const cleanValues = values.map((v) => v.trim().replace(/^"|"$/g, ""))
+
+        const options: { [key: string]: string } = {}
+        const optionLetters = ["A", "B", "C", "D", "E"]
+
+        optionLetters.forEach((letter, index) => {
+          const optionIndex = headers.findIndex((h) => h === `Option ${letter}`)
+          if (optionIndex !== -1 && cleanValues[optionIndex]) {
+            options[letter] = cleanValues[optionIndex]
+          }
+        })
+
+        return {
+          number: cleanValues[headers.indexOf("#")] || "",
+          question: cleanValues[headers.indexOf("Question")] || "",
+          options,
+          correctAnswer: cleanValues[headers.indexOf("Correct Answer")] || "",
+          explanation: cleanValues[headers.indexOf("Explanation")] || "",
+          domain: cleanValues[headers.indexOf("Domain")] || "",
+          competency: cleanValues[headers.indexOf("Competency")] || "",
+        }
+      })
+      .filter((q) => q.question && Object.keys(q.options).length > 0)
   }
 
   const handleAnswerSelect = (value: string) => {
@@ -176,7 +223,7 @@ export default function KCNAExamPractice() {
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <Alert>
-              <AlertDescription>No questions found. Please check the data source.</AlertDescription>
+              <AlertDescription>No questions found. Please check the CSV file format.</AlertDescription>
             </Alert>
           </CardContent>
         </Card>
