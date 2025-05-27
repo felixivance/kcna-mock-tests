@@ -157,7 +157,7 @@ export const examQuestions: Question[] = [
       E: "Implementing pod-level resource sharing"
     },
     correctAnswer: "B",
-    explanation: "containerd is a core container runtime that manages the complete container lifecycle on a single host \u2013 image transfer, storage, container execution, supervision, and network attachments.",
+    explanation: "containerd is a core container runtime that manages the complete container lifecycle on a single host - image transfer, storage, container execution, supervision, and network attachments.",
     domain: "Container Orchestration",
     competency: "Runtime"
   },
