@@ -580,8 +580,15 @@ export default function KCNAExamPractice() {
                 <ChevronLeft className="mr-2 h-4 w-4" />
                 Previous
               </Button>
+              <Button variant="outline" onClick={handleNext} disabled={!selectedAnswer && !reviewMode}>
+                  {currentQuestionIndex === questions.length - 1 ? "Finish" : "Next"}
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
 
-              {reviewMode ? (
+              
+            </div>
+            <div className="flex justify-center">
+              {reviewMode && (
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button>Exit Review</Button>
@@ -603,11 +610,6 @@ export default function KCNAExamPractice() {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
-              ) : (
-                <Button onClick={handleNext} disabled={!selectedAnswer && !reviewMode}>
-                  {currentQuestionIndex === questions.length - 1 ? "Finish" : "Next"}
-                  <ChevronRight className="ml-2 h-4 w-4" />
-                </Button>
               )}
             </div>
           </div>
