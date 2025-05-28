@@ -2,22 +2,40 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { CheckCircle2, XCircle, Trophy, BookOpen, ChevronLeft, ChevronRight } from "lucide-react"
+import { CheckCircle2, XCircle, Trophy, BookOpen, ChevronLeft, ChevronRight, Save, RotateCcw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { type Question, fetchExamQuestions } from "@/lib/exam-data"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 interface Answer {
   questionNumber: string
   selectedAnswer: string
   isCorrect: boolean
   timeSpent: number
+}
+
+interface QuizState {
+  currentQuestionIndex: number
+  answers: Answer[]
+  showResults: boolean
+  reviewMode: boolean
+  startTime: number
+  lastSaved: number
 }
 
 export default function KCNAExamPractice() {
@@ -30,10 +48,28 @@ export default function KCNAExamPractice() {
   const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now())
   const [loading, setLoading] = useState(true)
   const [reviewMode, setReviewMode] = useState(false)
+  const [hasSavedState, setHasSavedState] = useState(false)
+  const [showRestorePrompt, setShowRestorePrompt] = useState(false)
+  const [lastSaved, setLastSaved] = useState<number>(Date.now())
 
+  // Load questions
   useEffect(() => {
     loadQuestions()
   }, [])
+
+  // Check for saved state when questions are loaded
+  useEffect(() => {
+    if (questions.length > 0 && !hasSavedState) {
+      checkForSavedState()
+    }
+  }, [questions, hasSavedState])
+
+  // Save state to localStorage whenever relevant state changes
+  useEffect(() => {
+    if (questions.length > 0 && !loading) {
+      saveStateToLocalStorage()
+    }
+  }, [currentQuestionIndex, answers, showResults, reviewMode])
 
   const loadQuestions = async () => {
     try {
@@ -43,6 +79,92 @@ export default function KCNAExamPractice() {
     } catch (error) {
       console.error("Error loading questions:", error)
       setLoading(false)
+    }
+  }
+
+  const checkForSavedState = () => {
+    try {
+      const savedState = localStorage.getItem("kcnaQuizState")
+      if (savedState) {
+        const parsedState: QuizState = JSON.parse(savedState)
+
+        // Check if the saved state is recent (within the last 7 days)
+        const now = Date.now()
+        const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000
+        if (now - parsedState.lastSaved < sevenDaysInMs) {
+          setShowRestorePrompt(true)
+          return
+        }
+      }
+      setHasSavedState(true)
+    } catch (error) {
+      console.error("Error checking for saved state:", error)
+      setHasSavedState(true)
+    }
+  }
+
+  const restoreSavedState = () => {
+    try {
+      const savedState = localStorage.getItem("kcnaQuizState")
+      if (savedState) {
+        const parsedState: QuizState = JSON.parse(savedState)
+
+        setCurrentQuestionIndex(parsedState.currentQuestionIndex)
+        setAnswers(parsedState.answers)
+        setShowResults(parsedState.showResults)
+        setReviewMode(parsedState.reviewMode)
+
+        // Adjust the start time to maintain the elapsed time
+        const elapsedSinceSave = Date.now() - parsedState.lastSaved
+        setStartTime(parsedState.startTime + elapsedSinceSave)
+
+        // If we're in the middle of a question, restore the selected answer
+        if (!parsedState.showResults && !parsedState.reviewMode) {
+          const currentAnswer = parsedState.answers.find(
+            (a) => a.questionNumber === questions[parsedState.currentQuestionIndex]?.number,
+          )
+          setSelectedAnswer(currentAnswer?.selectedAnswer || "")
+        }
+
+        setLastSaved(parsedState.lastSaved)
+      }
+      setHasSavedState(true)
+      setShowRestorePrompt(false)
+    } catch (error) {
+      console.error("Error restoring saved state:", error)
+      setHasSavedState(true)
+      setShowRestorePrompt(false)
+    }
+  }
+
+  const discardSavedState = () => {
+    try {
+      localStorage.removeItem("kcnaQuizState")
+      setHasSavedState(true)
+      setShowRestorePrompt(false)
+    } catch (error) {
+      console.error("Error discarding saved state:", error)
+      setHasSavedState(true)
+      setShowRestorePrompt(false)
+    }
+  }
+
+  const saveStateToLocalStorage = () => {
+    try {
+      const now = Date.now()
+      const stateToSave: QuizState = {
+        currentQuestionIndex,
+        answers,
+        showResults,
+        reviewMode,
+        startTime,
+        lastSaved: now,
+      }
+
+      localStorage.setItem("kcnaQuizState", JSON.stringify(stateToSave))
+      setLastSaved(now)
+    } catch (error) {
+      console.error("Error saving state to localStorage:", error)
     }
   }
 
@@ -90,7 +212,15 @@ export default function KCNAExamPractice() {
     setSelectedAnswer("")
   }
 
-  const restartQuiz = () => {
+  const restartQuiz = (clearStorage = false) => {
+    if (clearStorage) {
+      try {
+        localStorage.removeItem("kcnaQuizState")
+      } catch (error) {
+        console.error("Error clearing localStorage:", error)
+      }
+    }
+
     setCurrentQuestionIndex(0)
     setSelectedAnswer("")
     setAnswers([])
@@ -153,6 +283,40 @@ export default function KCNAExamPractice() {
       total: stats.total,
       percentage: (stats.correct / stats.total) * 100,
     }))
+  }
+
+  const formatLastSaved = () => {
+    if (!lastSaved) return ""
+
+    const date = new Date(lastSaved)
+    return date.toLocaleTimeString()
+  }
+
+  if (showRestorePrompt) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Save className="h-5 w-5" />
+              Resume Previous Session
+            </CardTitle>
+            <CardDescription>
+              We found a saved quiz session. Would you like to resume where you left off?
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">Last saved: {new Date(lastSaved).toLocaleString()}</p>
+          </CardContent>
+          <CardFooter className="flex justify-between">
+            <Button variant="outline" onClick={discardSavedState}>
+              Start New Quiz
+            </Button>
+            <Button onClick={restoreSavedState}>Resume Session</Button>
+          </CardFooter>
+        </Card>
+      </div>
+    )
   }
 
   if (loading) {
@@ -302,10 +466,37 @@ export default function KCNAExamPractice() {
                   <BookOpen className="mr-2 h-4 w-4" />
                   Review Answers
                 </Button>
-                <Button onClick={restartQuiz}>Restart Quiz</Button>
+
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="default">
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                      Restart Quiz
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Restart Quiz</DialogTitle>
+                      <DialogDescription>
+                        Do you want to clear your saved progress? This will delete all saved data.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="flex justify-between sm:justify-between">
+                      <Button variant="outline" onClick={() => restartQuiz(false)}>
+                        Keep Saved Data
+                      </Button>
+                      <Button variant="destructive" onClick={() => restartQuiz(true)}>
+                        Clear All Data
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
           </CardContent>
+          <CardFooter className="flex justify-center">
+            <p className="text-xs text-muted-foreground">Last saved: {formatLastSaved()}</p>
+          </CardFooter>
         </Card>
       </div>
     )
@@ -391,7 +582,27 @@ export default function KCNAExamPractice() {
               </Button>
 
               {reviewMode ? (
-                <Button onClick={restartQuiz}>Exit Review</Button>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button>Exit Review</Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Exit Review Mode</DialogTitle>
+                      <DialogDescription>
+                        Do you want to restart the quiz? You can choose to keep or clear your saved progress.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="flex justify-between sm:justify-between">
+                      <Button variant="outline" onClick={() => restartQuiz(false)}>
+                        Keep Saved Data
+                      </Button>
+                      <Button variant="destructive" onClick={() => restartQuiz(true)}>
+                        Clear All Data
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               ) : (
                 <Button onClick={handleNext} disabled={!selectedAnswer && !reviewMode}>
                   {currentQuestionIndex === questions.length - 1 ? "Finish" : "Next"}
@@ -401,6 +612,9 @@ export default function KCNAExamPractice() {
             </div>
           </div>
         </CardContent>
+        <CardFooter className="flex justify-center">
+          <p className="text-xs text-muted-foreground">Last saved: {formatLastSaved()}</p>
+        </CardFooter>
       </Card>
     </div>
   )
