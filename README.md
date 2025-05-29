@@ -20,7 +20,7 @@ A Next.js-based interactive quiz platform to help you **learn and practice for t
 
 - **Framework:** [Next.js](https://nextjs.org)
 - **UI:** TailwindCSS / Shadcn UI 
-- **State Management:** LocalState at the moment
+- **Storage:** Localstorage to store your progress
 - **Deployment:** Vercel 
 
 ---
@@ -30,11 +30,13 @@ A Next.js-based interactive quiz platform to help you **learn and practice for t
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/kcna-practice-app.git
-cd kcna-practice-app
+git clone https://github.com/felixivance/kcna-mock-tests.git
+cd kcna-mock-tests
 ```
 
 ### 2. Clone the repository
+
+you can use your preferred package manager
 
 ```bash
 npm install
