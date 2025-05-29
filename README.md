@@ -2,7 +2,7 @@
 
 A Next.js-based interactive quiz platform to help you **learn and practice for the Kubernetes and Cloud Native Associate (KCNA)** certification.
 
-🚀 Built by [@FelixIvance](https://github.com/FelixIvance) to solidify knowledge and help others prepare effectively through real-world practice questions and community collaboration.
+ Built by [@FelixIvance](https://github.com/FelixIvance) to solidify knowledge and help others prepare effectively through real-world practice questions and community collaboration.
 
 ---
 
@@ -19,9 +19,9 @@ A Next.js-based interactive quiz platform to help you **learn and practice for t
 ## 🧪 Tech Stack
 
 - **Framework:** [Next.js](https://nextjs.org)
-- **UI:** TailwindCSS / Shadcn UI *(optional: mention if used)*
-- **State Management:** React Context / Zustand *(whichever applies)*
-- **Deployment:** Vercel / GCP / Docker *(mention your method)*
+- **UI:** TailwindCSS / Shadcn UI 
+- **State Management:** LocalState at the moment
+- **Deployment:** Vercel 
 
 ---
 
@@ -49,7 +49,7 @@ Then visit http://localhost:3000
 
 ### 🛠️ Contributing
 
-We welcome all contributions to grow the question bank and improve the learning experience!
+I welcome all contributions to grow the question bank and improve the learning experience!
 
 👉 How to contribute:
 Add your question to lib/exam-data.ts following the format:
@@ -73,7 +73,7 @@ Add your question to lib/exam-data.ts following the format:
 
 Create a Pull Request with a descriptive title
 
-We’ll review and merge once it fits the exam's tone and structure!
+I’ll review and merge once it fits the exam's tone and structure!
 
 ---
 
