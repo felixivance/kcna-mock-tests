@@ -1,6 +1,17 @@
+// src/__tests__/utils/test-utils.ts
 import React, { ReactElement } from 'react'
-import { render, RenderOptions } from '@testing-library/react'
-import { Question } from '@/lib/exam-data'
+import { render, RenderOptions, act } from '@testing-library/react'
+
+// Define Question type locally for testing
+export interface Question {
+  number: string
+  question: string
+  options: { [key: string]: string }
+  correctAnswer: string
+  explanation: string
+  domain: string
+  competency: string
+}
 
 // Mock questions for testing
 export const mockQuestions: Question[] = [
@@ -41,4 +52,4 @@ const customRender = (
 ) => render(ui, { ...options })
 
 export * from '@testing-library/react'
-export { customRender as render }
+export { customRender as renderWithAct }

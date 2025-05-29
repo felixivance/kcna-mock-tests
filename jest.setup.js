@@ -1,5 +1,8 @@
 import '@testing-library/jest-dom'
 
+// Required for React 19 act() support
+global.IS_REACT_ACT_ENVIRONMENT = true
+
 // Mock localStorage
 const localStorageMock = {
   getItem: jest.fn(),

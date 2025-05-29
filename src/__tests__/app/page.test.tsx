@@ -1,10 +1,11 @@
-import { render, screen, fireEvent, waitFor } from '../utils/test-utils'
+import { render, screen, waitFor, act } from '../utils/test-utils'
 import userEvent from '@testing-library/user-event'
 import KCNAExamPractice from '@/app/page'
-
+// import { act } from '@testing-library/react'
+// import { render, screen, waitFor, act } from '@testing-library/react'
 // Mock the exam data module
-jest.mock('@/lib/exam-data', () => ({
-  fetchExamQuestions: jest.fn(() => Promise.resolve([
+jest.mock('../../lib/exam-data', () => ({
+ fetchExamQuestions: jest.fn(() => Promise.resolve([
     {
       number: "1",
       question: "What is Kubernetes?",
@@ -22,10 +23,14 @@ jest.mock('@/lib/exam-data', () => ({
   ]))
 }))
 
+
+
 describe('KCNAExamPractice', () => {
   beforeEach(() => {
     localStorage.clear()
   })
+
+  
 
   test('renders loading state initially', () => {
     render(<KCNAExamPractice />)
@@ -33,8 +38,11 @@ describe('KCNAExamPractice', () => {
   })
 
   test('renders quiz interface after loading', async () => {
-    render(<KCNAExamPractice />)
+    await act(async () => {
+      render(<KCNAExamPractice />)
+    })
     
+    // Wait for async operations to complete
     await waitFor(() => {
       expect(screen.getByText('KCNA Practice Exam')).toBeInTheDocument()
     })
@@ -45,31 +53,47 @@ describe('KCNAExamPractice', () => {
 
   test('allows selecting an answer', async () => {
     const user = userEvent.setup()
-    render(<KCNAExamPractice />)
     
+    await act(async () => {
+      render(<KCNAExamPractice />)
+    })
+    
+    // Wait for the component to load
     await waitFor(() => {
       expect(screen.getByText('What is Kubernetes?')).toBeInTheDocument()
     })
     
-    const optionA = screen.getByLabelText(/A\. A container orchestration platform/)
-    await user.click(optionA)
+    const optionA = screen.getByText('A container orchestration platform')
     
-    expect(optionA).toBeChecked()
+    await act(async () => {
+      await user.click(optionA)
+    })
+    
+    // Check if the radio is selected
+    const radio = screen.getByRole('radio', { name: /A container orchestration platform/i })
+    expect(radio).toBeChecked()
   })
 
   test('enables next button when answer is selected', async () => {
     const user = userEvent.setup()
-    render(<KCNAExamPractice />)
     
+    await act(async () => {
+      render(<KCNAExamPractice />)
+    })
+    
+    // Wait for the component to load
     await waitFor(() => {
       expect(screen.getByText('What is Kubernetes?')).toBeInTheDocument()
     })
     
-    const nextButton = screen.getByRole('button', { name: /finish/i })
+    const nextButton = screen.getByRole('button', { name: /finish|next/i })
     expect(nextButton).toBeDisabled()
     
-    const optionA = screen.getByLabelText(/A\. A container orchestration platform/)
-    await user.click(optionA)
+    const optionA = screen.getByText('A container orchestration platform')
+    
+    await act(async () => {
+      await user.click(optionA)
+    })
     
     expect(nextButton).toBeEnabled()
   })
